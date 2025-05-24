@@ -75,46 +75,46 @@ This project integrates several tools to create a comprehensive interactive expe
 - Heatmaps for dropout hotspots
 - Dashboard filters for category-wise exploration
 
-> See the `visualizations/` folder and dashboard embeds for examples.
+> See the `phase1-powerbi` and `phase2-code-visualizations` folder and dashboard embeds for examples.
 
-'''
+```
+student-retention-visualization/
+│
+├── README.md
+├── LICENSE
+├
+│
+├── 📁 data/
+│   └── student_retention_dataset.csv 
+│
+├── 📁 docs/
+│   └── project1_group4.pdf          
+│
+├── 📁 phase1-powerbi/
+│   ├── dashboards/
+│   │   └── screenshots/             
+│   ├── powerbi-dashboard.pbix        
+│   └── embed-code.txt                
+│
+├── 📁 phase2-code-visualizations/
+│   ├── 📁 plotly/
+│   │   ├── notebook.ipynb            
+│   │   └── charts/                 
+│   │
+│   ├── 📁 altair/
+│   │   ├── notebook.ipynb
+│   │   └── charts/
+│   │
+│   ├── 📁 d3js/
+│   │   ├── 📁 visualizations/
+│   │   │   └── vis1.html, vis2.html  
+│   │   ├── 📁 data/
+│   │   │   └── processed.json       
+│   │   └── index.html              
+│
+└── 
 
-## 📁 Project Structure
-/student-retention-visualization/
-│
-├── README.md                 # Project overview and documentation
-├── LICENSE                   # License file (optional)
-├── requirements.txt          # Python package dependencies (for Altair, Plotly)
-├── .gitignore                # Ignoring unnecessary system files
-│
-├── data/
-│   ├── raw/                  # Original Kaggle dataset
-│   └── processed/            # Transformed and cleaned versions
-│
-├── notebooks/                # Jupyter notebooks for EDA and visual design
-│   └── analysis.ipynb
-│
-├── src/                      # Python scripts (optional if code modularized)
-│   ├── data_loader.py
-│   ├── preprocessing.py
-│   └── visualize.py
-│
-├── dashboard/                # Tableau, Power BI files or interactive HTML
-│   ├── dashboard.pbix
-│   ├── tableau_dashboard.twbx
-│   └── index.html
-│
-├── visualizations/           # Static or exported images of visualizations
-│   └── bar_chart_retention.png
-│
-├── report/                   # Final report (PDF or DOCX)
-│   └── final_report.pdf
-│
-└── presentation/             # Presentation slides or video
-├── video.mp4
-└── presentation.pdf
-
-'''
+```
 
 ## 📈 Key Insights
 
