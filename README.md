@@ -77,7 +77,7 @@ This project integrates several tools to create a comprehensive interactive expe
 
 > See the `visualizations/` folder and dashboard embeds for examples.
 
----
+'''
 
 ## 📁 Project Structure
 /student-retention-visualization/
@@ -114,7 +114,7 @@ This project integrates several tools to create a comprehensive interactive expe
 ├── video.mp4
 └── presentation.pdf
 
----
+'''
 
 ## 📈 Key Insights
 
