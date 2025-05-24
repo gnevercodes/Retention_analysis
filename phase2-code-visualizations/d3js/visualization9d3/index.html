@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>D3.js Treemap Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      .node {
+        box-sizing: border-box;
+        position: absolute;
+        overflow: hidden;
+        border: 1px solid white;
+        font-size: 12px;
+        line-height: 1.2em;
+        text-align: center;
+        padding: 4px;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>D3.js Treemap Visualization</h2>
+    <div
+      id="treemap"
+      style="
+        position: relative;
+        width: 960px;
+        height: 600px;
+      "
+    ></div>
+
+    <script>
+      // Instead of loading from CSV, we embed data directly
+      const data = [
+        { category: 'Course A', value: 100 },
+        { category: 'Course B', value: 80 },
+        { category: 'Course C', value: 60 },
+        { category: 'Course D', value: 40 },
+        { category: 'Course E', value: 30 },
+      ];
+
+      // Create hierarchy
+      const root = d3
+        .hierarchy({ children: data })
+        .sum((d) => d.value)
+        .sort((a, b) => b.value - a.value);
+
+      // Create treemap layout
+      d3.treemap().size([960, 600]).padding(2)(root);
+
+      const container = d3.select('#treemap');
+
+      // Create nodes
+      container
+        .selectAll('div')
+        .data(root.leaves())
+        .enter()
+        .append('div')
+        .attr('class', 'node')
+        .style('left', (d) => d.x0 + 'px')
+        .style('top', (d) => d.y0 + 'px')
+        .style('width', (d) => d.x1 - d.x0 + 'px')
+        .style('height', (d) => d.y1 - d.y0 + 'px')
+        .style('background', (d, i) =>
+          d3.interpolateSpectral(i / data.length),
+        )
+        .text((d) => `${d.data.category}\n${d.data.value}`);
+    </script>
+  </body>
+</html>

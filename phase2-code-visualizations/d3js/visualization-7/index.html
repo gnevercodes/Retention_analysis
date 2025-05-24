@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>
+      Bubble Chart: Application Mode vs Dropout Risk
+    </title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      .bubble {
+        stroke: black;
+        stroke-width: 1px;
+        opacity: 0.8;
+      }
+      .axis-label {
+        font-size: 14px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Application Mode vs Dropout Risk (Bubble Chart)</h2>
+    <svg width="960" height="600"></svg>
+
+    <script>
+      
+      const data = [
+        {
+          mode: 1,
+          dropout_rate: 12,
+          applicants: 500,
+          gender: 'Male',
+        },
+        {
+          mode: 2,
+          dropout_rate: 20,
+          applicants: 300,
+          gender: 'Female',
+        },
+        {
+          mode: 3,
+          dropout_rate: 8,
+          applicants: 150,
+          gender: 'Male',
+        },
+        {
+          mode: 4,
+          dropout_rate: 18,
+          applicants: 80,
+          gender: 'Female',
+        },
+        {
+          mode: 5,
+          dropout_rate: 5,
+          applicants: 220,
+          gender: 'Male',
+        },
+        {
+          mode: 6,
+          dropout_rate: 25,
+          applicants: 100,
+          gender: 'Female',
+        },
+      ];
+
+      const svg = d3.select('svg'),
+        width = +svg.attr('width'),
+        height = +svg.attr('height');
+
+      const x = d3
+        .scaleLinear()
+        .domain([0, d3.max(data, (d) => d.mode) + 1])
+        .range([80, width - 80]);
+
+      const y = d3
+        .scaleLinear()
+        .domain([
+          0,
+          d3.max(data, (d) => d.dropout_rate) + 10,
+        ])
+        .range([height - 80, 80]);
+
+      const r = d3
+        .scaleSqrt()
+        .domain([
+          d3.min(data, (d) => d.applicants),
+          d3.max(data, (d) => d.applicants),
+        ])
+        .range([10, 50]);
+
+      const color = d3
+        .scaleOrdinal()
+        .domain(['Male', 'Female'])
+        .range(['#4B9CD3', '#E75480']);
+
+      // Axes
+      svg
+        .append('g')
+        .attr('transform', `translate(0,${height - 80})`)
+        .call(d3.axisBottom(x).ticks(data.length));
+
+      svg
+        .append('g')
+        .attr('transform', `translate(80,0)`)
+        .call(d3.axisLeft(y));
+
+      svg
+        .append('text')
+        .attr('class', 'axis-label')
+        .attr('x', width / 2)
+        .attr('y', height - 20)
+        .attr('text-anchor', 'middle')
+        .text('Application Mode');
+
+      svg
+        .append('text')
+        .attr('class', 'axis-label')
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -height / 2)
+        .attr('y', 20)
+        .attr('text-anchor', 'middle')
+        .text('Dropout Rate (%)');
+
+      // Bubbles
+      svg
+        .selectAll('circle')
+        .data(data)
+        .enter()
+        .append('circle')
+        .attr('class', 'bubble')
+        .attr('cx', (d) => x(d.mode))
+        .attr('cy', (d) => y(d.dropout_rate))
+        .attr('r', (d) => r(d.applicants))
+        .style('fill', (d) => color(d.gender));
+
+      // Tooltip on hover (Optional)
+      svg
+        .selectAll('circle')
+        .append('title')
+        .text(
+          (d) =>
+            `Mode: ${d.mode}\nDropout: ${d.dropout_rate}%\nApplicants: ${d.applicants}\nGender Dominance: ${d.gender}`,
+        );
+    </script>
+  </body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gender vs Application Mode – Heatmap</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+
+      svg {
+        margin: auto;
+        display: block;
+        background: white;
+      }
+
+      .tooltip {
+        position: absolute;
+        background: white;
+        border: 1px solid #aaa;
+        padding: 6px 10px;
+        font-size: 13px;
+        pointer-events: none;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      text {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Gender vs Application Mode (Heatmap)</h2>
+    <svg width="800" height="500"></svg>
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+      d3.csv('dataset.csv').then(function (data) {
+        const columns = Object.keys(data[0]);
+        const genderCol = columns.find((col) =>
+          col.toLowerCase().includes('gender'),
+        );
+        const modeCol = columns.find((col) =>
+          col.toLowerCase().includes('application mode'),
+        );
+
+        // Standardize gender
+        data.forEach((d) => {
+          d.Gender =
+            d[genderCol]?.trim() === '1'
+              ? 'Male'
+              : 'Female';
+          d.Mode = d[modeCol];
+        });
+
+        // Group counts
+        const grouped = d3.rollups(
+          data,
+          (v) => v.length,
+          (d) => d.Mode,
+          (d) => d.Gender,
+        );
+
+        const flatData = [];
+        const modes = new Set();
+        const genders = new Set();
+
+        for (let [mode, sub] of grouped) {
+          modes.add(mode);
+          for (let [gender, count] of sub) {
+            genders.add(gender);
+            flatData.push({
+              Mode: mode,
+              Gender: gender,
+              Count: count,
+            });
+          }
+        }
+
+        const genderList = [...genders];
+        const modeList = [...modes];
+
+        const margin = {
+            top: 40,
+            right: 30,
+            bottom: 60,
+            left: 150,
+          },
+          width = 800 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
+
+        const svg = d3
+          .select('svg')
+          .append('g')
+          .attr(
+            'transform',
+            `translate(${margin.left},${margin.top})`,
+          );
+
+        const x = d3
+          .scaleBand()
+          .domain(genderList)
+          .range([0, width])
+          .padding(0.05);
+
+        const y = d3
+          .scaleBand()
+          .domain(modeList)
+          .range([0, height])
+          .padding(0.05);
+
+        const color = d3
+          .scaleSequential()
+          .interpolator(d3.interpolateBlues)
+          .domain([0, d3.max(flatData, (d) => d.Count)]);
+
+        const tooltip = d3.select('#tooltip');
+
+        // Draw heatmap
+        svg
+          .selectAll()
+          .data(flatData)
+          .join('rect')
+          .attr('x', (d) => x(d.Gender))
+          .attr('y', (d) => y(d.Mode))
+          .attr('width', x.bandwidth())
+          .attr('height', y.bandwidth())
+          .attr('fill', (d) => color(d.Count))
+          .on('mouseover', function (event, d) {
+            tooltip
+              .style('opacity', 1)
+              .html(
+                `<strong>Gender:</strong> ${d.Gender}<br>
+               <strong>Mode:</strong> ${d.Mode}<br>
+               <strong>Count:</strong> ${d.Count}`,
+              )
+              .style('left', event.pageX + 10 + 'px')
+              .style('top', event.pageY - 28 + 'px');
+            d3.select(this)
+              .attr('stroke', '#000')
+              .attr('stroke-width', 1.5);
+          })
+          .on('mouseout', function () {
+            tooltip.style('opacity', 0);
+            d3.select(this).attr('stroke', null);
+          });
+
+        // Add X Axis
+        svg
+          .append('g')
+          .attr('transform', `translate(0,${height})`)
+          .call(d3.axisBottom(x));
+
+        // Add Y Axis
+        svg.append('g').call(d3.axisLeft(y));
+
+        // Axis labels
+        svg
+          .append('text')
+          .attr('x', width / 2)
+          .attr('y', height + 40)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#000')
+          .text('Gender');
+
+        svg
+          .append('text')
+          .attr('transform', 'rotate(-90)')
+          .attr('x', -height / 2)
+          .attr('y', -120)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#000')
+          .text('Application Mode');
+      });
+    </script>
+  </body>
+</html

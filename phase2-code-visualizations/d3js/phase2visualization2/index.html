@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Retention Pie Chart – D3.js</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+
+      .tooltip {
+        position: absolute;
+        text-align: center;
+        padding: 6px 12px;
+        background: white;
+        border: 1px solid #aaa;
+        border-radius: 4px;
+        pointer-events: none;
+        font-size: 13px;
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      svg {
+        margin: auto;
+        display: block;
+      }
+
+      .label-text {
+        font-size: 13px;
+        fill: white;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>
+      Retention Outcome Breakdown (Interactive Pie Chart)
+    </h2>
+    <div id="tooltip" class="tooltip"></div>
+    <svg width="600" height="500"></svg>
+
+    <script>
+      d3.csv('dataset.csv').then(function (data) {
+        // Step 1: Find the column that contains 0s and 1s (Target)
+        const possibleTargetCol = Object.keys(data[0]).find(
+          (key) =>
+            data.every(
+              (d) =>
+                d[key].trim() === '0' ||
+                d[key].trim() === '1',
+            ),
+        );
+
+        if (!possibleTargetCol) {
+          alert(
+            'No valid Target column found (with 0s and 1s).',
+          );
+          return;
+        }
+
+        // Step 2: Map values
+        const targetMap = { 1: 'Retained', 0: 'Dropped' };
+
+        const grouped = d3.rollups(
+          data,
+          (v) => v.length,
+          (d) => targetMap[d[possibleTargetCol].trim()],
+        );
+
+        const pieData = grouped.map(([label, value]) => ({
+          label,
+          value,
+        }));
+
+        // Set up pie chart
+        const width = 600,
+          height = 500;
+        const radius = Math.min(width, height) / 2 - 50;
+
+        const svg = d3
+          .select('svg')
+          .attr('viewBox', `0 0 ${width} ${height}`)
+          .append('g')
+          .attr(
+            'transform',
+            `translate(${width / 2}, ${height / 2})`,
+          );
+
+        const color = d3
+          .scaleOrdinal()
+          .domain(pieData.map((d) => d.label))
+          .range(['#2a9d8f', '#e76f51']);
+
+        const pie = d3
+          .pie()
+          .sort(null)
+          .value((d) => d.value);
+
+        const arc = d3
+          .arc()
+          .innerRadius(0)
+          .outerRadius(radius);
+
+        const arcHover = d3
+          .arc()
+          .innerRadius(0)
+          .outerRadius(radius + 10);
+
+        const tooltip = d3.select('#tooltip');
+
+        svg
+          .selectAll('path')
+          .data(pie(pieData))
+          .join('path')
+          .attr('d', arc)
+          .attr('fill', (d) => color(d.data.label))
+          .on('mouseover', function (event, d) {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('d', arcHover);
+            tooltip
+              .style('opacity', 1)
+              .html(
+                `<strong>${d.data.label}</strong><br>${d.data.value} students<br>(${((d.data.value / d3.sum(pieData, (d) => d.value)) * 100).toFixed(1)}%)`,
+              )
+              .style('left', event.pageX + 10 + 'px')
+              .style('top', event.pageY - 28 + 'px');
+          })
+          .on('mouseout', function (event, d) {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('d', arc);
+            tooltip.style('opacity', 0);
+          });
+
+        const labelArc = d3
+          .arc()
+          .innerRadius(radius * 0.5)
+          .outerRadius(radius * 0.85);
+
+        svg
+          .selectAll('text')
+          .data(pie(pieData))
+          .join('text')
+          .attr(
+            'transform',
+            (d) => `translate(${labelArc.centroid(d)})`,
+          )
+          .attr('class', 'label-text')
+          .text((d) => d.data.label);
+      });
+    </script>
+  </body>
+</html

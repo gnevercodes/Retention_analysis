@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>
+      Scatter Plot – Age vs Grade (by Gender & Retention)
+    </title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+
+      svg {
+        margin: auto;
+        display: block;
+        background-color: white;
+        border: 1px solid #ccc;
+      }
+
+      .tooltip {
+        position: absolute;
+        background: white;
+        border: 1px solid #aaa;
+        padding: 6px 10px;
+        font-size: 13px;
+        pointer-events: none;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>
+      Age vs 1st Semester Grade (Colored by Gender &
+      Retention)
+    </h2>
+    <svg width="900" height="520"></svg>
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+      d3.csv('dataset.csv').then(function (data) {
+        const ageCol = 'Age at enrollment';
+        const gradeCol = 'Curricular units 1st sem (grade)';
+        const targetCol = 'Target';
+        const genderCol = 'Gender';
+
+        const targetMap = { 1: 'Retained', 0: 'Dropped' };
+        const genderMap = { 1: 'Male', 0: 'Female' };
+
+        // Parse and map data
+        data.forEach((d) => {
+          d.Age = +d[ageCol];
+          d.Grade = +d[gradeCol];
+          const gender = genderMap[d[genderCol]?.trim()];
+          const status = targetMap[d[targetCol]?.trim()];
+          d.Group = `${gender}-${status}`;
+          d.Gender = gender;
+          d.Status = status;
+        });
+
+        data = data.filter(
+          (d) => !isNaN(d.Age) && !isNaN(d.Grade),
+        );
+
+        const margin = {
+            top: 40,
+            right: 30,
+            bottom: 60,
+            left: 70,
+          },
+          width = 900 - margin.left - margin.right,
+          height = 520 - margin.top - margin.bottom;
+
+        const svg = d3
+          .select('svg')
+          .append('g')
+          .attr(
+            'transform',
+            `translate(${margin.left},${margin.top})`,
+          );
+
+        const x = d3
+          .scaleLinear()
+          .domain(d3.extent(data, (d) => d.Age))
+          .range([0, width]);
+
+        const y = d3
+          .scaleLinear()
+          .domain(d3.extent(data, (d) => d.Grade))
+          .range([height, 0]);
+
+        const groups = [
+          'Male-Retained',
+          'Male-Dropped',
+          'Female-Retained',
+          'Female-Dropped',
+        ];
+
+        const color = d3
+          .scaleOrdinal()
+          .domain(groups)
+          .range([
+            '#1f77b4',
+            '#ff7f0e',
+            '#2ca02c',
+            '#d62728',
+          ]);
+
+        const tooltip = d3.select('#tooltip');
+
+        // Draw dots
+        svg
+          .selectAll('circle')
+          .data(data)
+          .join('circle')
+          .attr('cx', (d) => x(d.Age))
+          .attr('cy', (d) => y(d.Grade))
+          .attr('r', 5)
+          .attr('fill', (d) => color(d.Group))
+          .attr('opacity', 0.8)
+          .on('mouseover', function (event, d) {
+            tooltip
+              .style('opacity', 1)
+              .html(
+                `<strong>Age:</strong> ${d.Age}<br>
+               <strong>Grade:</strong> ${d.Grade}<br>
+               <strong>Gender:</strong> ${d.Gender}<br>
+               `,
+              )
+              .style('left', event.pageX + 10 + 'px')
+              .style('top', event.pageY - 28 + 'px');
+            d3.select(this).attr('r', 8);
+          })
+          .on('mouseout', function () {
+            tooltip.style('opacity', 0);
+            d3.select(this).attr('r', 5);
+          });
+
+        // Axes
+        svg
+          .append('g')
+          .attr('transform', `translate(0,${height})`)
+          .call(
+            d3.axisBottom(x).tickFormat(d3.format('d')),
+          );
+
+        svg.append('g').call(d3.axisLeft(y));
+
+        // Labels
+        svg
+          .append('text')
+          .attr('x', width / 2)
+          .attr('y', height + 45)
+          .attr('text-anchor', 'middle')
+          .text('Age at Enrollment');
+
+        svg
+          .append('text')
+          .attr('transform', 'rotate(-90)')
+          .attr('x', -height / 2)
+          .attr('y', -50)
+          .attr('text-anchor', 'middle')
+          .text('1st Semester Grade');
+      });
+    </script>
+
+    <!-- ✅ LEGEND -->
+    <div style="margin-top: 20px">
+      <strong>Legend:</strong><br />
+      <span
+        style="
+          display: inline-block;
+          width: 15px;
+          height: 15px;
+          background: #1f77b4;
+          margin-right: 6px;
+        "
+      ></span>
+      Male-Retained<br />
+      <span
+        style="
+          display: inline-block;
+          width: 15px;
+          height: 15px;
+          background: #ff7f0e;
+          margin-right: 6px;
+        "
+      ></span>
+      Male-Dropped<br />
+      <span
+        style="
+          display: inline-block;
+          width: 15px;
+          height: 15px;
+          background: #2ca02c;
+          margin-right: 6px;
+        "
+      ></span>
+      Female-Retained<br />
+      <span
+        style="
+          display: inline-block;
+          width: 15px;
+          height: 15px;
+          background: #d62728;
+          margin-right: 6px;
+        "
+      ></span>
+      Female-Dropped
+    </div>
+  </body>
+</ht

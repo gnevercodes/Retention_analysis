@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Total Students by Gender – D3.js</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      svg {
+        background-color: white;
+        border: 1px solid #ccc;
+        margin: auto;
+        display: block;
+      }
+
+      .tooltip {
+        position: absolute;
+        text-align: left;
+        padding: 8px 12px;
+        font-size: 13px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #aaa;
+        border-radius: 4px;
+        pointer-events: none;
+        box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Total Students by Gender (Simple D3.js Chart)</h2>
+    <svg width="800" height="450"></svg>
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+      d3.csv('dataset.csv').then(function (data) {
+        const genderMap = { 0: 'Female', 1: 'Male' };
+
+        
+        data.forEach((d) => {
+          d.Gender = genderMap[d.Gender] || d.Gender;
+        });
+
+      
+        const genderCounts = d3
+          .rollups(
+            data,
+            (v) => v.length,
+            (d) => d.Gender,
+          )
+          .map(([gender, count]) => ({
+            Gender: gender,
+            Count: count,
+          }));
+
+        // SVG setup
+        const svg = d3.select('svg'),
+          margin = {
+            top: 50,
+            right: 40,
+            bottom: 60,
+            left: 70,
+          },
+          width =
+            +svg.attr('width') - margin.left - margin.right,
+          height =
+            +svg.attr('height') -
+            margin.top -
+            margin.bottom,
+          g = svg
+            .append('g')
+            .attr(
+              'transform',
+              `translate(${margin.left},${margin.top})`,
+            );
+
+        const x = d3
+          .scaleBand()
+          .domain(genderCounts.map((d) => d.Gender))
+          .range([0, width])
+          .padding(0.4);
+
+        const y = d3
+          .scaleLinear()
+          .domain([0, d3.max(genderCounts, (d) => d.Count)])
+          .nice()
+          .range([height, 0]);
+
+        const color = d3
+          .scaleOrdinal()
+          .domain(['Male', 'Female'])
+          .range(['#457b9d', '#f76c6c']);
+
+        // Bars
+        g.selectAll('rect')
+          .data(genderCounts)
+          .join('rect')
+          .attr('x', (d) => x(d.Gender))
+          .attr('y', (d) => y(d.Count))
+          .attr('width', x.bandwidth())
+          .attr('height', (d) => height - y(d.Count))
+          .attr('fill', (d) => color(d.Gender))
+          .on('mouseover', function (event, d) {
+            d3.select('#tooltip')
+              .style('opacity', 1)
+              .html(
+                `<strong>${d.Gender}</strong><br>Total Students: ${d.Count}`,
+              )
+              .style('left', event.pageX + 10 + 'px')
+              .style('top', event.pageY - 28 + 'px');
+            d3.select(this).attr('fill', 'orange');
+          })
+          .on('mouseout', function (event, d) {
+            d3.select('#tooltip').style('opacity', 0);
+            d3.select(this).attr('fill', color(d.Gender));
+          });
+
+        // X Axis
+        g.append('g')
+          .attr('transform', `translate(0,${height})`)
+          .call(d3.axisBottom(x))
+          .append('text')
+          .attr('x', width / 2)
+          .attr('y', 40)
+          .attr('fill', '#000')
+          .attr('text-anchor', 'middle')
+          .text('Gender');
+
+        // Y Axis
+        g.append('g')
+          .call(d3.axisLeft(y))
+          .append('text')
+          .attr('transform', 'rotate(-90)')
+          .attr('x', -height / 2)
+          .attr('y', -50)
+          .attr('fill', '#000')
+          .attr('text-anchor', 'middle')
+          .text('Number of Students');
+      });
+    </script>
+  </body>
+</html

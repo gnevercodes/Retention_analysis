@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Inflation vs Average Grade</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+
+      svg {
+        margin: auto;
+        display: block;
+        background: white;
+        border: 1px solid #ccc;
+      }
+
+      .tooltip {
+        position: absolute;
+        background: white;
+        border: 1px solid #aaa;
+        padding: 6px 10px;
+        font-size: 13px;
+        pointer-events: none;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Inflation Rate vs Average Grade (1st Semester)</h2>
+    <svg width="900" height="500"></svg>
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+      d3.csv('dataset.csv').then(function (data) {
+        const inflationCol = 'Inflation rate';
+        const gradeCol = 'Curricular units 1st sem (grade)';
+
+        // Group by Inflation Rate and compute average grade
+        const grouped = d3.rollups(
+          data,
+          (v) => d3.mean(v, (d) => +d[gradeCol]),
+          (d) => +d[inflationCol],
+        );
+
+        const points = grouped
+          .filter((d) => !isNaN(d[0]) && !isNaN(d[1]))
+          .map(([inflation, avgGrade]) => ({
+            inflation: +inflation,
+            avgGrade: +avgGrade,
+          }))
+          .sort((a, b) => a.inflation - b.inflation);
+
+        const margin = {
+            top: 40,
+            right: 30,
+            bottom: 60,
+            left: 70,
+          },
+          width = 900 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
+
+        const svg = d3
+          .select('svg')
+          .append('g')
+          .attr(
+            'transform',
+            `translate(${margin.left},${margin.top})`,
+          );
+
+        const x = d3
+          .scaleLinear()
+          .domain(d3.extent(points, (d) => d.inflation))
+          .range([0, width]);
+
+        const y = d3
+          .scaleLinear()
+          .domain([0, d3.max(points, (d) => d.avgGrade)])
+          .nice()
+          .range([height, 0]);
+
+        const line = d3
+          .line()
+          .x((d) => x(d.inflation))
+          .y((d) => y(d.avgGrade));
+
+        const tooltip = d3.select('#tooltip');
+
+        svg
+          .append('path')
+          .datum(points)
+          .attr('fill', 'none')
+          .attr('stroke', '#2a9d8f')
+          .attr('stroke-width', 2.5)
+          .attr('d', line);
+
+        svg
+          .selectAll('circle')
+          .data(points)
+          .join('circle')
+          .attr('cx', (d) => x(d.inflation))
+          .attr('cy', (d) => y(d.avgGrade))
+          .attr('r', 5)
+          .attr('fill', '#e76f51')
+          .on('mouseover', function (event, d) {
+            tooltip
+              .style('opacity', 1)
+              .html(
+                `<strong>Inflation:</strong> ${d.inflation.toFixed(2)}%<br>
+               <strong>Avg Grade:</strong> ${d.avgGrade.toFixed(2)}`,
+              )
+              .style('left', event.pageX + 10 + 'px')
+              .style('top', event.pageY - 28 + 'px');
+            d3.select(this).attr('r', 8);
+          })
+          .on('mouseout', function () {
+            tooltip.style('opacity', 0);
+            d3.select(this).attr('r', 5);
+          });
+
+        svg
+          .append('g')
+          .attr('transform', `translate(0,${height})`)
+          .call(
+            d3
+              .axisBottom(x)
+              .ticks(8)
+              .tickFormat((d) => d + '%'),
+          );
+
+        svg.append('g').call(d3.axisLeft(y));
+
+        svg
+          .append('text')
+          .attr('x', width / 2)
+          .attr('y', height + 50)
+          .attr('text-anchor', 'middle')
+          .text('Inflation Rate');
+
+        svg
+          .append('text')
+          .attr('transform', 'rotate(-90)')
+          .attr('x', -height / 2)
+          .attr('y', -50)
+          .attr('text-anchor', 'middle')
+          .text('Average Grade (1st Semester)');
+      });
+    </script>
+  </body>
+</html>

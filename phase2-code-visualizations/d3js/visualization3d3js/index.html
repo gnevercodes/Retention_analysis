@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Retention by Course – D3.js</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9f9f9;
+        text-align: center;
+      }
+
+      svg {
+        margin: auto;
+        display: block;
+        background: white;
+        border: 1px solid #ccc;
+      }
+
+      .tooltip {
+        position: absolute;
+        background: white;
+        border: 1px solid #aaa;
+        padding: 6px 10px;
+        font-size: 13px;
+        pointer-events: none;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Retention Outcome by Course</h2>
+    <svg width="1000" height="600"></svg>
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+      d3.csv('dataset.csv').then(function (data) {
+        const columns = Object.keys(data[0]);
+        const courseCol = columns.find((col) =>
+          col.toLowerCase().includes('course'),
+        );
+        const targetCol = columns.find((col) =>
+          col.toLowerCase().includes('target'),
+        );
+
+        // Convert + map data
+        const grouped = d3.rollups(
+          data,
+          (v) => v.length,
+          (d) => d[courseCol],
+          (d) => {
+            let t = d[targetCol];
+            if (typeof t === 'string') t = t.trim();
+            t = +t;
+            return t === 1 ? 'Retained' : 'Dropped';
+          },
+        );
+
+        const flatData = [];
+        for (let [course, statuses] of grouped) {
+          for (let [status, count] of statuses) {
+            flatData.push({
+              Course: course,
+              Status: status,
+              Count: count,
+            });
+          }
+        }
+
+        // Sort courses by total count
+        const courseOrder = Array.from(
+          d3.rollups(
+            flatData,
+            (v) => d3.sum(v, (d) => d.Count),
+            (d) => d.Course,
+          ),
+        )
+          .sort((a, b) => b[1] - a[1])
+          .map((d) => d[0]);
+
+        // Setup
+        const margin = {
+            top: 50,
+            right: 30,
+            bottom: 100,
+            left: 80,
+          },
+          width = 1000 - margin.left - margin.right,
+          height = 600 - margin.top - margin.bottom;
+
+        const svg = d3
+          .select('svg')
+          .append('g')
+          .attr(
+            'transform',
+            `translate(${margin.left},${margin.top})`,
+          );
+
+        const x0 = d3
+          .scaleBand()
+          .domain(courseOrder)
+          .range([0, width])
+          .paddingInner(0.2);
+
+        const x1 = d3
+          .scaleBand()
+          .domain(['Retained', 'Dropped'])
+          .range([0, x0.bandwidth()])
+          .padding(0.05);
+
+        const y = d3
+          .scaleLinear()
+          .domain([0, d3.max(flatData, (d) => d.Count)])
+          .nice()
+          .range([height, 0]);
+
+        const color = d3
+          .scaleOrdinal()
+          .domain(['Retained', 'Dropped'])
+          .range(['#2a9d8f', '#e76f51']);
+
+        const tooltip = d3.select('#tooltip');
+
+        svg
+          .selectAll('g')
+          .data(d3.group(flatData, (d) => d.Course))
+          .join('g')
+          .attr(
+            'transform',
+            (d) => `translate(${x0(d[0])},0)`,
+          )
+          .selectAll('rect')
+          .data((d) => d[1])
+          .join('rect')
+          .attr('x', (d) => x1(d.Status))
+          .attr('y', (d) => y(d.Count))
+          .attr('width', x1.bandwidth())
+          .attr('height', (d) => height - y(d.Count))
+          .attr('fill', (d) => color(d.Status))
+          .on('mouseover', function (event, d) {
+            tooltip
+              .style('opacity', 1)
+              .html(
+                `<strong>Course:</strong> ${d.Course}<br>
+               <strong>Status:</strong> ${d.Status}<br>
+               <strong>Count:</strong> ${d.Count}`,
+              )
+              .style('left', event.pageX + 10 + 'px')
+              .style('top', event.pageY - 28 + 'px');
+            d3.select(this).attr('fill', '#f4a261');
+          })
+          .on('mouseout', function (event, d) {
+            tooltip.style('opacity', 0);
+            d3.select(this).attr('fill', color(d.Status));
+          });
+
+        // X Axis
+        svg
+          .append('g')
+          .attr('transform', `translate(0,${height})`)
+          .call(d3.axisBottom(x0))
+          .selectAll('text')
+          .attr('transform', 'rotate(-45)')
+          .style('text-anchor', 'end');
+
+        // Y Axis
+        svg.append('g').call(d3.axisLeft(y));
+
+        svg
+          .append('text')
+          .attr('x', width / 2)
+          .attr('y', height + 80)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#333')
+          .text('Course');
+
+        svg
+          .append('text')
+          .attr('transform', 'rotate(-90)')
+          .attr('y', -60)
+          .attr('x', -height / 2)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#333')
+          .text('Number of Students');
+      });
+    </script>
+  </body>
+</html
